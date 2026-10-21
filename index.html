@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Мой график</title>
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="График">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #0f172a; --muted: #64748b;
+  --line: #e5e7eb; --line-soft: #f1f3f6; --free: rgba(16,185,129,.07);
+  --accent: #2563eb; --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+  --hour: 46px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1020; --panel: #121a2e; --text: #e5e9f2; --muted: #8b95ad;
+    --line: #232c44; --line-soft: #1a2238; --free: rgba(16,185,129,.09);
+    --accent: #60a5fa; --shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+body { padding: max(12px, env(safe-area-inset-top)) 16px 40px; }
+.wrap { max-width: 1200px; margin: 0 auto; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 1px solid var(--line); background: var(--panel);
+  border-radius: 10px; padding: 7px 12px; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.ghost { background: transparent; border-color: transparent; }
+button.danger { color: #ef4444; }
+
+header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+header h1 { font-size: 20px; margin: 0; }
+.nav { display: flex; gap: 6px; align-items: center; }
+.nav .range { min-width: 150px; text-align: center; font-weight: 600; }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+.top { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+@media (max-width: 860px) { .top { grid-template-columns: 1fr; } }
+.box { padding: 12px 14px; }
+.box h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.stat { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--line-soft); }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.train-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 6px 12px; background: transparent; }
+.seg button.on { background: var(--accent); color: #fff; }
+.warn { color: #ef4444; font-weight: 600; }
+.ok { color: #10b981; font-weight: 600; }
+
+.evenings { display: grid; gap: 6px; }
+.ev-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ev-row .d { width: 26px; font-weight: 600; }
+.ev-row .t { width: 92px; color: var(--muted); font-size: 12px; }
+.chip { border-radius: 999px; padding: 3px 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
+.chip.on { color: #fff; border-color: transparent; }
+
+.daytabs { display: none; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
+.daytabs button { flex: 1 0 auto; padding: 6px 10px; }
+.daytabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.daytabs button.today:not(.on) { border-color: var(--accent); }
+
+.cal { overflow: hidden; }
+.cal-head, .cal-body { display: grid; grid-template-columns: 48px repeat(var(--cols), 1fr); }
+.cal-head { border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 3; }
+.cal-head div { padding: 8px 4px; text-align: center; font-weight: 600; }
+.cal-head .num { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+.cal-head .today { color: var(--accent); }
+.cal-scroll { max-height: calc(100vh - 120px); overflow-y: auto; }
+.hours div { height: var(--hour); font-size: 11px; color: var(--muted); text-align: right; padding-right: 6px; transform: translateY(-7px); }
+.col { position: relative; border-left: 1px solid var(--line); cursor: copy;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--hour) - 1px), var(--line-soft) calc(var(--hour) - 1px), var(--line-soft) var(--hour)); }
+.freezone { position: absolute; left: 0; right: 0; background: var(--free); pointer-events: none; }
+.freezone span { position: absolute; top: 2px; right: 4px; font-size: 10px; color: #10b981; opacity: .8; }
+.evt { position: absolute; border-radius: 8px; padding: 3px 6px; color: #fff; font-size: 12px; overflow: hidden;
+  cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.2); border: 1px solid rgba(255,255,255,.25); line-height: 1.25; }
+.evt b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.evt small { opacity: .9; }
+.evt.done { opacity: .55; }
+.evt.done b::before { content: "✓ "; }
+.now { position: absolute; left: 0; right: 0; height: 2px; background: #ef4444; z-index: 2; pointer-events: none; }
+.now::before { content: ""; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
+
+@media (max-width: 700px) {
+  body { padding-left: 10px; padding-right: 10px; }
+  .daytabs { display: flex; }
+  .ev-row .t { width: auto; }
+  :root { --hour: 52px; }
+  dialog .row3 { grid-template-columns: 1fr 1fr; }
+  dialog .row3 > :first-child { grid-column: 1 / -1; }
+}
+
+dialog { border: 0; border-radius: 16px; padding: 0; background: var(--panel); color: var(--text); width: min(420px, calc(100vw - 32px)); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+dialog form { padding: 18px; display: grid; gap: 12px; }
+dialog h3 { margin: 0; font-size: 17px; }
+label.f { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+label.f { min-width: 0; }
+label.f input, label.f select { width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 15px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; }
+.actions { display: flex; gap: 8px; justify-content: space-between; margin-top: 4px; }
+.actions .r { display: flex; gap: 8px; }
+.check { display: flex; gap: 8px; align-items: center; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.cats { display: flex; flex-wrap: wrap; gap: 6px; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Мой график</h1>
+    <div class="nav">
+      <button id="prev" aria-label="Прошлая неделя">‹</button>
+      <div class="range" id="range"></div>
+      <button id="next" aria-label="Следующая неделя">›</button>
+      <button id="today">Сегодня</button>
+    </div>
+    <div class="tools">
+      <button id="add" class="primary">+ Дело</button>
+      <button id="tplBtn">Шаблон</button>
+      <button id="ics">В календарь (.ics)</button>
+      <button id="reset" class="ghost">Сбросить неделю</button>
+    </div>
+  </header>
+
+  <div class="top">
+    <section class="panel box">
+      <h2>Неделя</h2>
+      <div class="stats" id="stats"></div>
+      <div class="train-row">
+        <span>3-я тренировка (утро):</span>
+        <div class="seg" id="wkTrain">
+          <button data-d="5">Суббота</button><button data-d="6">Воскресенье</button>
+        </div>
+        <span id="trainStatus"></span>
+      </div>
+    </section>
+    <section class="panel box">
+      <h2>Чем занят вечер после работы</h2>
+      <div class="evenings" id="evenings"></div>
+    </section>
+  </div>
+
+  <div class="daytabs" id="daytabs"></div>
+  <div class="panel cal">
+    <div class="cal-head" id="calHead"></div>
+    <div class="cal-scroll" id="calScroll"><div class="cal-body" id="calBody"></div></div>
+  </div>
+  <p class="hint" style="margin-top:8px">Нажми на пустое место в сетке — создашь дело на это время. Нажми на блок — изменишь, отметишь выполненным или удалишь.</p>
+</div>
+
+<dialog id="evDlg">
+  <form method="dialog" id="evForm">
+    <h3 id="evTitle">Дело</h3>
+    <label class="f">Название<input name="title" required maxlength="60" autocomplete="off"></label>
+    <div class="cats" id="evCats"></div>
+    <div class="row3">
+      <label class="f">День<select name="day"></select></label>
+      <label class="f">С<input name="start" type="time" step="900" required></label>
+      <label class="f">До<input name="end" type="time" step="900" required></label>
+    </div>
+    <label class="check"><input type="checkbox" name="done"> Выполнено</label>
+    <div class="actions">
+      <button type="button" class="danger" id="evDel">Удалить</button>
+      <div class="r"><button value="cancel" formnovalidate>Отмена</button><button value="ok" class="primary">Сохранить</button></div>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="tplDlg">
+  <form method="dialog" id="tplForm">
+    <h3>Шаблон недели</h3>
+    <p class="hint">Из шаблона заполняются новые недели. Текущую неделю можно пересобрать кнопкой «Сбросить неделю».</p>
+    <div class="row2">
+      <label class="f">Работа с<input name="workStart" type="time" step="900"></label>
+      <label class="f">Работа до<input name="workEnd" type="time" step="900"></label>
+    </div>
+    <label class="f">Свободное время с<input name="freeFrom" type="time" step="900"></label>
+    <div class="row3">
+      <label class="f">Тренировка 1<select name="t1day"></select></label>
+      <label class="f">С<input name="t1start" type="time" step="900"></label>
+      <label class="f">До<input name="t1end" type="time" step="900"></label>
+    </div>
+    <div class="row3">
+      <label class="f">Тренировка 2<select name="t2day"></select></label>
+      <label class="f">С<input name="t2start" type="time" step="900"></label>
+      <label class="f">До<input name="t2end" type="time" step="900"></label>
+    </div>
+    <div class="row3">
+      <label class="f">Тренировка 3<select name="t3day"><option value="5">Сб</option><option value="6">Вс</option></select></label>
+      <label class="f">С<input name="t3start" type="time" step="900"></label>
+      <label class="f">До<input name="t3end" type="time" step="900"></label>
+    </div>
+    <div class="actions">
+      <button type="button" id="backup">Резервная копия</button>
+      <div class="r"><button value="cancel" formnovalidate>Отмена</button><button value="ok" class="primary">Сохранить</button></div>
+    </div>
+    <label class="f">Восстановить из копии<input type="file" id="restore" accept="application/json"></label>
+  </form>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CATS = {
+  work:    { name: 'Работа',     color: '#64748b' },
+  train:   { name: 'Тренировка', color: '#ef4444' },
+  sklad:   { name: 'Склад',      color: '#f59e0b' },
+  montage: { name: 'Монтаж',     color: '#8b5cf6' },
+  rest:    { name: 'Отдых',      color: '#10b981' },
+  other:   { name: 'Дела',       color: '#3b82f6' },
+};
+const EVENING_CATS = ['sklad', 'montage', 'rest', 'other'];
+const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+const START_H = 7, END_H = 24, DAY_END = '23:30';
+const KEY = 'grafik.v1';
+
+const DEFAULT_TEMPLATE = {
+  workDays: [0, 1, 2, 3, 4], workStart: '09:30', workEnd: '18:00', freeFrom: '19:00',
+  trainings: [
+    { day: 1, start: '20:30', end: '22:30' },
+    { day: 3, start: '20:30', end: '22:30' },
+    { day: 5, start: '10:00', end: '12:00' },
+  ],
+  trainingsPerWeek: 3,
+};
+
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const fromMin = m => { m = Math.max(0, Math.min(24 * 60 - 1, m)); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const uid = () => Math.random().toString(36).slice(2, 10);
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const mondayOf = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return addDays(x, -((x.getDay() + 6) % 7)); };
+const todayIdx = () => (new Date().getDay() + 6) % 7;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1800); }
+
+// ---------- state ----------
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.template) return s; } catch (e) {}
+  return { template: structuredClone(DEFAULT_TEMPLATE), weeks: {} };
+}
+let state = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { toast('Не удалось сохранить'); } }
+
+let monday = mondayOf(new Date());
+let activeDay = todayIdx();
+const wkKey = () => iso(monday);
+
+function buildFromTemplate() {
+  const t = state.template, evs = [];
+  t.workDays.forEach(d => evs.push({ id: uid(), day: d, start: t.workStart, end: t.workEnd, title: 'Работа', cat: 'work' }));
+  t.trainings.forEach((tr, i) => evs.push({ id: uid(), day: tr.day, start: tr.start, end: tr.end, title: 'Тренировка', cat: 'train', tpl: i === 2 ? 'train3' : 'train' }));
+  return { events: evs };
+}
+function week() {
+  const k = wkKey();
+  if (!state.weeks[k]) { state.weeks[k] = buildFromTemplate(); save(); }
+  return state.weeks[k];
+}
+const isMobile = () => matchMedia('(max-width: 700px)').matches;
+
+// ---------- render ----------
+function render() {
+  const w = week();
+  const sun = addDays(monday, 6);
+  $('#range').textContent = `${monday.getDate()} ${MONTHS[monday.getMonth()]} – ${sun.getDate()} ${MONTHS[sun.getMonth()]}`;
+  renderStats(w); renderEvenings(w); renderDayTabs(); renderCal(w);
+}
+
+function renderStats(w) {
+  const hrs = {};
+  w.events.forEach(e => { hrs[e.cat] = (hrs[e.cat] || 0) + (toMin(e.end) - toMin(e.start)) / 60; });
+  $('#stats').innerHTML = Object.keys(CATS).filter(c => hrs[c]).map(c =>
+    `<span class="stat"><span class="dot" style="background:${CATS[c].color}"></span>${CATS[c].name}: ${+hrs[c].toFixed(1)} ч</span>`).join('') || '<span class="hint">Пока пусто</span>';
+
+  const trains = w.events.filter(e => e.cat === 'train');
+  const done = trains.filter(e => e.done).length, need = state.template.trainingsPerWeek;
+  const st = $('#trainStatus');
+  if (trains.length < need) st.innerHTML = `<span class="warn">Тренировок ${trains.length}/${need} — добавь ещё</span>`;
+  else st.innerHTML = `<span class="${done >= need ? 'ok' : ''}">Сделано ${done}/${need}</span>`;
+
+  const t3 = w.events.find(e => e.tpl === 'train3');
+  document.querySelectorAll('#wkTrain button').forEach(b => b.classList.toggle('on', !!t3 && +b.dataset.d === t3.day));
+}
+
+function eveningWindow(w, d) {
+  const free = toMin(state.template.freeFrom);
+  const later = w.events.filter(e => e.day === d && e.cat === 'train' && toMin(e.start) >= free).map(e => toMin(e.start));
+  return [free, later.length ? Math.min(...later) : toMin(DAY_END)];
+}
+function renderEvenings(w) {
+  const html = state.template.workDays.map(d => {
+    const [s, e] = eveningWindow(w, d);
+    const cur = w.events.find(x => x.day === d && x.tpl === 'evening');
+    const train = w.events.some(x => x.day === d && x.cat === 'train' && toMin(x.start) >= s);
+    const chips = EVENING_CATS.map(c => {
+      const on = cur && cur.cat === c;
+      return `<button class="chip ${on ? 'on' : ''}" data-day="${d}" data-cat="${c}" style="${on ? `background:${CATS[c].color}` : ''}">${CATS[c].name}</button>`;
+    }).join('');
+    return `<div class="ev-row"><span class="d">${DAYS[d]}</span><span class="t">${fromMin(s)}–${fromMin(e)}${train ? ' 🏋️' : ''}</span>${chips}</div>`;
+  }).join('');
+  $('#evenings').innerHTML = html;
+}
+
+function renderDayTabs() {
+  const t = iso(new Date());
+  $('#daytabs').innerHTML = DAYS.map((d, i) => {
+    const date = addDays(monday, i);
+    return `<button data-i="${i}" class="${i === activeDay ? 'on' : ''} ${iso(date) === t ? 'today' : ''}">${d} ${date.getDate()}</button>`;
+  }).join('');
+}
+
+function layoutDay(evs) {
+  evs = evs.map(e => ({ ...e, s: toMin(e.start), e: toMin(e.end) })).sort((a, b) => a.s - b.s || b.e - a.e);
+  const clusters = []; let cur = [], curEnd = -1;
+  for (const ev of evs) {
+    if (cur.length && ev.s >= curEnd) { clusters.push(cur); cur = []; curEnd = -1; }
+    cur.push(ev); curEnd = Math.max(curEnd, ev.e);
+  }
+  if (cur.length) clusters.push(cur);
+  for (const c of clusters) {
+    const lanes = [];
+    for (const ev of c) {
+      let i = lanes.findIndex(end => end <= ev.s);
+      if (i < 0) { i = lanes.length; lanes.push(0); }
+      lanes[i] = ev.e; ev.lane = i;
+    }
+    c.forEach(ev => ev.lanes = lanes.length);
+  }
+  return evs;
+}
+
+function renderCal(w) {
+  const days = isMobile() ? [activeDay] : [0, 1, 2, 3, 4, 5, 6];
+  const hourPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hour'));
+  const y = m => (m - START_H * 60) / 60 * hourPx;
+  const tIso = iso(new Date());
+  document.querySelector('.cal').style.setProperty('--cols', days.length);
+
+  $('#calHead').innerHTML = '<div></div>' + days.map(i => {
+    const date = addDays(monday, i);
+    return `<div class="${iso(date) === tIso ? 'today' : ''}">${isMobile() ? DAYS_FULL[i] : DAYS[i]}<span class="num">${date.getDate()} ${MONTHS[date.getMonth()]}</span></div>`;
+  }).join('');
+
+  let html = '<div class="hours">';
+  for (let h = START_H; h < END_H; h++) html += `<div>${h === START_H ? '' : h + ':00'}</div>`;
+  html += '</div>';
+  const t = state.template;
+  for (const d of days) {
+    const date = addDays(monday, d);
+    html += `<div class="col" data-day="${d}" style="height:${(END_H - START_H) * hourPx}px">`;
+    const freeStart = t.workDays.includes(d) ? toMin(t.freeFrom) : START_H * 60;
+    html += `<div class="freezone" style="top:${y(freeStart)}px;bottom:0"><span>свободно</span></div>`;
+    for (const ev of layoutDay(w.events.filter(e => e.day === d))) {
+      const top = y(Math.max(ev.s, START_H * 60)), h = Math.max(18, y(ev.e) - top - 2);
+      const width = 100 / ev.lanes;
+      html += `<div class="evt ${ev.done ? 'done' : ''}" data-id="${ev.id}" style="top:${top}px;height:${h}px;left:calc(${ev.lane * width}% + 2px);width:calc(${width}% - 4px);background:${CATS[ev.cat].color}">
+        <b>${esc(ev.title)}</b>${h > 30 ? `<small>${ev.start}–${ev.end}</small>` : ''}</div>`;
+    }
+    if (iso(date) === tIso) {
+      const n = new Date(), m = n.getHours() * 60 + n.getMinutes();
+      if (m >= START_H * 60) html += `<div class="now" style="top:${y(m)}px"></div>`;
+    }
+    html += '</div>';
+  }
+  $('#calBody').innerHTML = html;
+}
+
+// ---------- event editor ----------
+const evDlg = $('#evDlg'), evForm = $('#evForm');
+evForm.day.innerHTML = DAYS_FULL.map((d, i) => `<option value="${i}">${d}</option>`).join('');
+let editing = null, editCat = 'other';
+
+function renderCatChips() {
+  $('#evCats').innerHTML = Object.entries(CATS).map(([k, c]) =>
+    `<button type="button" class="chip ${k === editCat ? 'on' : ''}" data-cat="${k}" style="${k === editCat ? `background:${c.color}` : ''}"><span class="dot" style="background:${c.color}"></span>${c.name}</button>`).join('');
+}
+$('#evCats').addEventListener('click', e => {
+  const b = e.target.closest('[data-cat]'); if (!b) return;
+  const prevName = CATS[editCat].name;
+  editCat = b.dataset.cat;
+  if (!evForm.title.value || evForm.title.value === prevName) evForm.title.value = CATS[editCat].name;
+  renderCatChips();
+});
+
+function openEditor(ev) {
+  editing = ev;
+  editCat = ev.cat;
+  $('#evTitle').textContent = ev.id ? 'Изменить' : 'Новое дело';
+  evForm.title.value = ev.title || CATS[ev.cat].name;
+  evForm.day.value = ev.day; evForm.start.value = ev.start; evForm.end.value = ev.end;
+  evForm.done.checked = !!ev.done;
+  $('#evDel').style.visibility = ev.id ? 'visible' : 'hidden';
+  renderCatChips();
+  evDlg.showModal();
+}
+evDlg.addEventListener('close', () => {
+  if (evDlg.returnValue !== 'ok' || !editing) return;
+  const f = evForm;
+  if (toMin(f.end.value) <= toMin(f.start.value)) { toast('Конец должен быть позже начала'); return; }
+  const data = { title: f.title.value.trim() || CATS[editCat].name, cat: editCat, day: +f.day.value, start: f.start.value, end: f.end.value, done: f.done.checked };
+  const w = week();
+  if (editing.id) Object.assign(w.events.find(e => e.id === editing.id), data);
+  else w.events.push({ id: uid(), ...data });
+  save(); render();
+});
+$('#evDel').addEventListener('click', () => {
+  const w = week();
+  w.events = w.events.filter(e => e.id !== editing.id);
+  editing = null; evDlg.close(); save(); render(); toast('Удалено');
+});
+
+// ---------- interactions ----------
+$('#calBody').addEventListener('click', e => {
+  const evEl = e.target.closest('.evt');
+  if (evEl) { openEditor(week().events.find(x => x.id === evEl.dataset.id)); return; }
+  const col = e.target.closest('.col'); if (!col) return;
+  const hourPx = col.offsetHeight / (END_H - START_H);
+  const m = START_H * 60 + Math.floor((e.clientY - col.getBoundingClientRect().top) / hourPx * 2) * 30;
+  openEditor({ day: +col.dataset.day, start: fromMin(m), end: fromMin(m + 60), cat: 'other', title: '' });
+});
+
+$('#evenings').addEventListener('click', e => {
+  const b = e.target.closest('[data-cat]'); if (!b) return;
+  const d = +b.dataset.day, cat = b.dataset.cat, w = week();
+  const cur = w.events.find(x => x.day === d && x.tpl === 'evening');
+  if (cur && cur.cat === cat) w.events = w.events.filter(x => x !== cur);
+  else {
+    const [s, en] = eveningWindow(w, d);
+    if (cur) Object.assign(cur, { cat, title: CATS[cat].name });
+    else w.events.push({ id: uid(), day: d, start: fromMin(s), end: fromMin(en), title: CATS[cat].name, cat, tpl: 'evening' });
+  }
+  save(); render();
+});
+
+$('#wkTrain').addEventListener('click', e => {
+  const b = e.target.closest('[data-d]'); if (!b) return;
+  const w = week(), d = +b.dataset.d;
+  let t3 = w.events.find(x => x.tpl === 'train3');
+  if (t3) t3.day = d;
+  else { const tr = state.template.trainings[2]; w.events.push({ id: uid(), day: d, start: tr.start, end: tr.end, title: 'Тренировка', cat: 'train', tpl: 'train3' }); }
+  save(); render();
+});
+
+$('#daytabs').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) { activeDay = +b.dataset.i; render(); } });
+$('#prev').onclick = () => { monday = addDays(monday, -7); render(); };
+$('#next').onclick = () => { monday = addDays(monday, 7); render(); };
+$('#today').onclick = () => { monday = mondayOf(new Date()); activeDay = todayIdx(); render(); scrollToNow(); };
+$('#add').onclick = () => {
+  const d = isMobile() ? activeDay : (iso(mondayOf(new Date())) === wkKey() ? todayIdx() : 0);
+  openEditor({ day: d, start: state.template.freeFrom, end: fromMin(toMin(state.template.freeFrom) + 60), cat: 'other', title: '' });
+};
+$('#reset').onclick = () => {
+  if (!confirm('Пересобрать эту неделю из шаблона? Все дела этой недели удалятся.')) return;
+  state.weeks[wkKey()] = buildFromTemplate(); save(); render(); toast('Неделя пересобрана');
+};
+
+// ---------- template ----------
+const tplDlg = $('#tplDlg'), tf = $('#tplForm');
+['t1day', 't2day'].forEach(n => tf[n].innerHTML = DAYS.map((d, i) => `<option value="${i}">${d}</option>`).join(''));
+$('#tplBtn').onclick = () => {
+  const t = state.template;
+  tf.workStart.value = t.workStart; tf.workEnd.value = t.workEnd; tf.freeFrom.value = t.freeFrom;
+  t.trainings.forEach((tr, i) => { tf[`t${i + 1}day`].value = tr.day; tf[`t${i + 1}start`].value = tr.start; tf[`t${i + 1}end`].value = tr.end; });
+  tplDlg.showModal();
+};
+tplDlg.addEventListener('close', () => {
+  if (tplDlg.returnValue !== 'ok') return;
+  const t = state.template;
+  Object.assign(t, { workStart: tf.workStart.value, workEnd: tf.workEnd.value, freeFrom: tf.freeFrom.value });
+  t.trainings = [1, 2, 3].map(i => ({ day: +tf[`t${i}day`].value, start: tf[`t${i}start`].value, end: tf[`t${i}end`].value }));
+  save();
+  if (confirm('Шаблон сохранён. Пересобрать текущую неделю по новому шаблону?')) state.weeks[wkKey()] = buildFromTemplate();
+  save(); render();
+});
+$('#backup').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
+  a.download = `grafik-${iso(new Date())}.json`; a.click();
+};
+$('#restore').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const s = JSON.parse(await f.text());
+    if (!s.template || !s.weeks) throw 0;
+    state = s; save(); tplDlg.close(); render(); toast('Восстановлено');
+  } catch (err) { toast('Это не файл графика'); }
+};
+
+// ---------- .ics export ----------
+$('#ics').onclick = () => {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//grafik//RU', 'CALSCALE:GREGORIAN'];
+  for (const e of week().events) {
+    const ymd = iso(addDays(monday, e.day)).replace(/-/g, '');
+    lines.push('BEGIN:VEVENT', `UID:${e.id}-${ymd}@grafik`, `DTSTAMP:${stamp}`,
+      `DTSTART:${ymd}T${e.start.replace(':', '')}00`, `DTEND:${ymd}T${e.end.replace(':', '')}00`,
+      `SUMMARY:${e.title.replace(/[,;\\]/g, m => '\\' + m)}`, `CATEGORIES:${CATS[e.cat].name}`, 'END:VEVENT');
+  }
+  lines.push('END:VCALENDAR');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/calendar' }));
+  a.download = `grafik-${wkKey()}.ics`; a.click();
+};
+
+// ---------- start ----------
+function scrollToNow() {
+  const hourPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hour'));
+  const h = Math.max(START_H, new Date().getHours() - 2);
+  $('#calScroll').scrollTop = (h - START_H) * hourPx;
+}
+matchMedia('(max-width: 700px)').addEventListener('change', render);
+setInterval(render, 60 * 1000);
+render(); scrollToNow();
+if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
