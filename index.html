@@ -61,7 +61,7 @@ body {
   margin: 0; background: var(--bg); color: var(--text);
   font: 17px/1.47 var(--font); letter-spacing: -.022em;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  padding-bottom: calc(150px + env(safe-area-inset-bottom));
 }
 button, select, input { font: inherit; color: inherit; letter-spacing: inherit; }
 button { cursor: pointer; border: 0; background: none; padding: 0; }
@@ -223,9 +223,63 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 
 .foot { text-align: center; font-size: 12px; color: var(--text-3); margin: 34px 0 0; }
 
+/* prompts */
+.prompt { padding: 20px; margin-top: 12px; animation: rise .5s var(--ease) both; transition: opacity .22s, transform .22s var(--ease); }
+.prompt.bye { opacity: 0; transform: scale(.96); }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+.p-top { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+.p-ic { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font-size: 24px; flex: none; background: color-mix(in srgb, var(--c) 14%, transparent); }
+.p-q { font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 1.25; }
+.p-sub { font-size: 15px; color: var(--text-2); margin-top: 1px; }
+.p-act { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pbtn { height: 52px; border-radius: 14px; background: var(--fill-2); font-size: 17px; font-weight: 600; transition: transform .15s var(--ease), filter .15s; }
+.pbtn.pri { background: var(--c); color: #fff; }
+.pbtn:active, .tile:active { transform: scale(.96); }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile {
+  height: 84px; border-radius: 16px; display: grid; place-items: center; align-content: center; gap: 4px;
+  background: color-mix(in srgb, var(--c) 11%, var(--surface)); color: color-mix(in srgb, var(--c) 70%, var(--text));
+  font-size: 16px; font-weight: 600; transition: transform .15s var(--ease);
+}
+@media (prefers-color-scheme: dark) { .tile { background: color-mix(in srgb, var(--c) 22%, var(--surface)); color: color-mix(in srgb, var(--c) 45%, #fff); } }
+.tile span { font-size: 28px; line-height: 1; }
+.allset { padding: 18px 20px; margin-top: 12px; display: flex; gap: 14px; align-items: center; animation: rise .5s var(--ease) both; }
+.allset .p-ic { --c: #34c759; color: #34c759; }
+.allset .p-ic svg { width: 24px; height: 24px; }
+
+/* agenda */
+.agenda { padding: 4px 0; }
+.ag { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 18px; text-align: left; position: relative; min-height: 60px; }
+.ag + .ag::before { content: ""; position: absolute; top: 0; left: 84px; right: 0; border-top: .5px solid var(--sep); }
+.ag-time { width: 52px; flex: none; font-size: 15px; font-weight: 600; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.ag-time small { display: block; font-size: 13px; font-weight: 400; color: var(--text-3); }
+.ag-bar { width: 4px; align-self: stretch; border-radius: 4px; background: var(--c); flex: none; }
+.ag-main { flex: 1; min-width: 0; }
+.ag .t1 { font-size: 17px; font-weight: 500; }
+.ag .t2 { font-size: 13px; color: var(--text-2); }
+.ag.past { opacity: .4; }
+.ag.cur .t2 { color: var(--c); font-weight: 600; }
+.ag .ok { color: #34c759; font-weight: 700; }
+.ag.add { color: var(--blue); }
+.ag.add .ag-time { font-size: 24px; font-weight: 300; text-align: center; }
+.ag:active { background: var(--fill-2); }
+
+/* tab bar */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 18;
+  background: var(--bar); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-top: .5px solid var(--sep); padding-bottom: env(safe-area-inset-bottom);
+}
+.tabbar .in { display: flex; justify-content: center; height: 54px; }
+.tab { flex: 1; max-width: 180px; display: grid; justify-items: center; align-content: center; gap: 1px; font-size: 11px; font-weight: 500; color: var(--text-3); letter-spacing: 0; }
+.tab svg { width: 27px; height: 27px; }
+.tab.on { color: var(--blue); }
+body[data-tab="today"] .fab { display: none; }
+body[data-tab="today"] #today { visibility: hidden; }
+
 /* fab */
 .fab {
-  position: fixed; z-index: 15; right: max(20px, env(safe-area-inset-right)); bottom: calc(24px + env(safe-area-inset-bottom));
+  position: fixed; z-index: 15; right: max(20px, env(safe-area-inset-right)); bottom: calc(72px + env(safe-area-inset-bottom));
   width: 58px; height: 58px; border-radius: 50%; background: var(--blue); color: #fff; box-shadow: var(--shadow-float);
   display: grid; place-items: center; transition: transform .2s var(--ease), background .2s;
 }
@@ -290,7 +344,7 @@ dialog.sheet[open]::backdrop { animation: fade .3s ease; }
 .g-note { font-size: 13px; color: var(--text-2); margin: -14px 16px 0; line-height: 1.4; }
 
 .toast {
-  position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom)); transform: translate(-50%, 10px);
+  position: fixed; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom)); transform: translate(-50%, 10px);
   background: color-mix(in srgb, var(--text) 88%, transparent); color: var(--bg);
   -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
   padding: 10px 18px; border-radius: 999px; font-size: 15px; font-weight: 500;
@@ -326,13 +380,19 @@ dialog.sheet[open]::backdrop { animation: fade .3s ease; }
 <main class="wrap">
   <section class="hero">
     <p class="eyebrow" id="todayLabel"></p>
-    <h1 class="large" id="largeTitle">График</h1>
+    <h1 class="large" id="largeTitle">Сегодня</h1>
   </section>
 
-  <section class="card now" id="now"></section>
+  <div id="tabToday">
+    <section class="card now" id="now"></section>
+    <div id="prompts"></div>
+    <div class="section-h"><h2>План на день</h2><span class="meta" id="agendaMeta"></span></div>
+    <section class="card agenda" id="agenda"></section>
+  </div>
 
-  <div class="section-h">
-    <h2 id="weekTitle">Неделя</h2>
+  <div id="tabWeek" hidden>
+  <div class="section-h" style="margin-top:0">
+    <h2 id="weekTitle" hidden>Неделя</h2><span></span>
     <div class="week-nav">
       <span class="meta" id="range"></span>
       <button class="icon-btn" id="prev" aria-label="Прошлая неделя"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
@@ -358,9 +418,17 @@ dialog.sheet[open]::backdrop { animation: fade .3s ease; }
 
   <div class="section-h"><h2>Итоги недели</h2><span class="meta" id="sumMeta"></span></div>
   <section class="card sum" id="sum"></section>
+  </div>
 
   <p class="foot">Данные хранятся только на этом устройстве.</p>
 </main>
+
+<nav class="tabbar" id="tabbar">
+  <div class="in">
+    <button class="tab on" data-tab="today"><svg viewBox="0 0 28 28" fill="currentColor"><path d="M14 8.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0-6c.6 0 1 .4 1 1v2a1 1 0 1 1-2 0v-2c0-.6.4-1 1-1Zm0 19.5c.6 0 1 .4 1 1v2a1 1 0 1 1-2 0v-2c0-.6.4-1 1-1ZM3.5 14c0-.6.4-1 1-1h2a1 1 0 1 1 0 2h-2a1 1 0 0 1-1-1Zm17 0c0-.6.4-1 1-1h2a1 1 0 1 1 0 2h-2a1 1 0 0 1-1-1ZM6.6 6.6a1 1 0 0 1 1.4 0l1.4 1.4A1 1 0 1 1 8 9.4L6.6 8a1 1 0 0 1 0-1.4Zm12 12a1 1 0 0 1 1.4 0l1.4 1.4a1 1 0 1 1-1.4 1.4L18.6 20a1 1 0 0 1 0-1.4Zm2.8-12a1 1 0 0 1 0 1.4L20 9.4A1 1 0 1 1 18.6 8L20 6.6a1 1 0 0 1 1.4 0Zm-12 12a1 1 0 0 1 0 1.4L8 21.4A1 1 0 1 1 6.6 20L8 18.6a1 1 0 0 1 1.4 0Z"/></svg>Сегодня</button>
+    <button class="tab" data-tab="week"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5.5" width="20" height="18" rx="4"/><path d="M4 11h20M9.5 3v4M18.5 3v4"/><circle cx="10" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="14" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="18" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg>Неделя</button>
+  </div>
+</nav>
 
 <button class="fab mob-only" id="add" aria-label="Новое дело"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 
@@ -500,6 +568,8 @@ function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catc
 
 let monday = mondayOf(new Date());
 let activeDay = todayIdx();
+let tab = 'today';
+const curKey = () => iso(mondayOf(new Date()));
 const wkKey = () => iso(monday);
 
 function buildFromTemplate() {
@@ -509,7 +579,14 @@ function buildFromTemplate() {
   return { events: evs };
 }
 function week(k = wkKey()) {
-  if (!state.weeks[k]) { state.weeks[k] = buildFromTemplate(); save(); }
+  if (!state.weeks[k]) {
+    const w = buildFromTemplate();
+    // утреннюю тренировку ставим на тот же день, что и на прошлой неделе
+    const prev = state.weeks[iso(addDays(new Date(k + 'T00:00'), -7))];
+    const p3 = prev && prev.events.find(e => e.tpl === 'train3'), t3 = w.events.find(e => e.tpl === 'train3');
+    if (p3 && t3) t3.day = p3.day;
+    state.weeks[k] = w; save();
+  }
   return state.weeks[k];
 }
 const byTime = (a, b) => a.day - b.day || toMin(a.start) - toMin(b.start);
@@ -526,6 +603,11 @@ function render() {
   const thisWeek = iso(mondayOf(new Date())) === wkKey();
   const diff = Math.round((monday - mondayOf(new Date())) / 864e5 / 7);
   $('#weekTitle').textContent = thisWeek ? 'Эта неделя' : diff === 1 ? 'Следующая неделя' : diff === -1 ? 'Прошлая неделя' : 'Неделя';
+  document.body.dataset.tab = tab;
+  $('#tabToday').hidden = tab !== 'today'; $('#tabWeek').hidden = tab !== 'week';
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  $('#largeTitle').textContent = $('#bar .ttl').textContent = tab === 'today' ? 'Сегодня' : $('#weekTitle').textContent;
+  renderPrompts(); renderAgenda();
   renderNow(); renderStrip(w); renderCal(w); renderTrain(w); renderEves(w); renderSum(w);
 }
 
@@ -626,7 +708,7 @@ function renderTrain(w) {
   const t3 = w.events.find(e => e.tpl === 'train3');
   let list = trains.map(e => `<div class="li">
       <button class="check ${e.done ? 'on' : ''}" data-toggle="${e.id}" aria-label="${e.done ? 'Снять отметку' : 'Отметить выполненной'}">${CHECK_SVG}</button>
-      <button class="main" data-open="${e.id}"><div class="t1">${DAYS_FULL[e.day]}</div><div class="t2">${e.start} – ${e.end}</div></button>
+      <button class="main" data-open="${e.id}"><div class="t1">${DAYS_FULL[e.day]}</div><div class="t2">${e.start} – ${e.end}${e.skipped && !e.done ? ' · пропущена' : ''}</div></button>
       <span class="chev">›</span></div>`).join('');
   if (trains.length < need) list += `<button class="li add" id="addTrain" style="width:100%"><span class="plus">+</span><span class="main">Добавить тренировку · не хватает ${need - trains.length}</span></button>`;
   $('#train').innerHTML = `
@@ -746,7 +828,7 @@ $('#strip').addEventListener('click', e => {
 $('#train').addEventListener('click', e => {
   const w = week();
   const tg = e.target.closest('[data-toggle]');
-  if (tg) { const ev = w.events.find(x => x.id === tg.dataset.toggle); ev.done = !ev.done; haptic(); save(); render(); return; }
+  if (tg) { const ev = w.events.find(x => x.id === tg.dataset.toggle); ev.done = !ev.done; ev.skipped = false; haptic(); save(); render(); return; }
   const op = e.target.closest('[data-open]');
   if (op) { openEditor(w.events.find(x => x.id === op.dataset.open)); return; }
   if (e.target.closest('#addTrain')) { const tr = state.template.trainings[2]; newEvent(5, tr.start, 'train'); return; }
@@ -754,6 +836,7 @@ $('#train').addEventListener('click', e => {
   if (b) {
     const d = +b.dataset.d;
     let t3 = w.events.find(x => x.tpl === 'train3');
+    w.t3set = true;
     if (t3) t3.day = d;
     else { const tr = state.template.trainings[2]; w.events.push({ id: uid(), day: d, start: tr.start, end: tr.end, title: 'Тренировка', cat: 'train', tpl: 'train3' }); }
     haptic(); save(); render();
@@ -841,6 +924,115 @@ $('#mIcs').onclick = () => {
   download(new Blob([lines.join('\r\n')], { type: 'text/calendar' }), `grafik-${wkKey()}.ics`);
   menuDlg.close();
 };
+
+// ---------- today: prompts ----------
+const dayWord = (day, d) => day === d ? 'сегодня' : day === d - 1 ? 'вчера' : day === d + 1 ? 'завтра' : (day === 1 ? 'во ' : 'в ') + DAYS_ACC[day];
+function suggestMakeup(w, d, m) {
+  const t = state.template;
+  for (let dd = d; dd <= 6; dd++) {
+    if (w.events.some(e => e.day === dd && e.cat === 'train' && !e.skipped)) continue;
+    const slot = dd >= 5 ? t.trainings[2] : t.trainings[0];
+    if (dd === d && m > toMin(slot.start) - 60) continue;
+    return { day: dd, start: slot.start, end: slot.end };
+  }
+  return null;
+}
+function buildPrompts() {
+  const w = week(curKey()), d = todayIdx(), m = nowMin(), t = state.template, out = [];
+  const trains = w.events.filter(e => e.cat === 'train').sort(byTime);
+  // 1. прошедшие тренировки без отметки
+  trains.filter(e => (e.day < d || (e.day === d && toMin(e.end) <= m)) && !e.done && !e.skipped)
+    .forEach(e => out.push({ kind: 'check', e }));
+  // 2. если тренировок меньше нормы — предложить добавить
+  const alive = trains.filter(e => !e.skipped).length;
+  if (alive < t.trainingsPerWeek && !w.noMakeup && !out.length) {
+    const sug = suggestMakeup(w, d, m);
+    if (sug) out.push({ kind: 'makeup', sug, miss: t.trainingsPerWeek - alive });
+  }
+  // 3. утренняя тренировка: суббота или воскресенье (спрашиваем с четверга)
+  const t3 = w.events.find(e => e.tpl === 'train3');
+  if (t3 && !w.t3set && d >= 3 && d <= t3.day && !(t3.day === d && toMin(t3.start) <= m)) out.push({ kind: 't3', e: t3 });
+  // 4. чем занят вечер (сегодня, а поздно вечером — завтра)
+  const evDay = [d, d + 1].find(dd => {
+    if (!t.workDays.includes(dd) || w.events.some(e => e.day === dd && e.tpl === 'evening')) return false;
+    if (dd === d) return m < eveningWindow(w, d)[1] - 30;
+    return m >= toMin('20:00') && dd <= 6;
+  });
+  if (evDay !== undefined) out.push({ kind: 'eve', day: evDay });
+  return out;
+}
+function renderPrompts() {
+  const d = todayIdx(), w = week(curKey());
+  const cards = buildPrompts().map(p => {
+    if (p.kind === 'check') return `<section class="card prompt" style="--c:${CATS.train.color}">
+      <div class="p-top"><div class="p-ic">🏋️</div><div><div class="p-q">Тренировка ${dayWord(p.e.day, d)} была?</div><div class="p-sub">${DAYS_FULL[p.e.day]}, ${p.e.start} – ${p.e.end}</div></div></div>
+      <div class="p-act"><button class="pbtn pri" data-act="done" data-id="${p.e.id}">Была</button><button class="pbtn" data-act="skip" data-id="${p.e.id}">Пропустил</button></div></section>`;
+    if (p.kind === 'makeup') return `<section class="card prompt" style="--c:${CATS.train.color}">
+      <div class="p-top"><div class="p-ic">💪</div><div><div class="p-q">Не хватает ${p.miss === 1 ? 'одной тренировки' : p.miss + ' тренировок'}</div><div class="p-sub">Поставить ${dayWord(p.sug.day, d)}, ${p.sug.start} – ${p.sug.end}?</div></div></div>
+      <div class="p-act"><button class="pbtn pri" data-act="makeup" data-day="${p.sug.day}" data-s="${p.sug.start}" data-e="${p.sug.end}">Поставить</button><button class="pbtn" data-act="nomakeup">Не в этот раз</button></div></section>`;
+    if (p.kind === 't3') return `<section class="card prompt" style="--c:${CATS.train.color}">
+      <div class="p-top"><div class="p-ic">🌅</div><div><div class="p-q">Утренняя тренировка</div><div class="p-sub">В какой день на этих выходных? ${p.e.start} – ${p.e.end}</div></div></div>
+      <div class="p-act"><button class="pbtn ${p.e.day === 5 ? 'pri' : ''}" data-act="t3" data-day="5">Суббота</button><button class="pbtn ${p.e.day === 6 ? 'pri' : ''}" data-act="t3" data-day="6">Воскресенье</button></div></section>`;
+    if (p.kind === 'eve') {
+      const [s, e] = eveningWindow(w, p.day), train = e < toMin(DAY_END);
+      const ICON = { sklad: '📦', montage: '🎬', rest: '🛋️', other: '✏️' };
+      return `<section class="card prompt" style="--c:${CATS.other.color}">
+      <div class="p-top"><div class="p-ic">🌙</div><div><div class="p-q">Что ${dayWord(p.day, d)} вечером?</div><div class="p-sub">${fromMin(s)} – ${fromMin(e)}${train ? ', потом тренировка' : ''}</div></div></div>
+      <div class="tiles">${EVENING_CATS.map(c => `<button class="tile" style="--c:${CATS[c].color}" data-act="eve" data-day="${p.day}" data-cat="${c}"><span>${ICON[c]}</span>${CATS[c].name}</button>`).join('')}</div></section>`;
+    }
+  });
+  $('#prompts').innerHTML = cards.length ? cards.join('') : `<section class="card allset"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><div><div class="p-q">Всё отмечено</div><div class="p-sub">Больше ничего делать не нужно</div></div></section>`;
+}
+$('#prompts').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const w = week(curKey()), a = b.dataset.act;
+  let msg = '';
+  if (a === 'done' || a === 'skip') {
+    const ev = w.events.find(x => x.id === b.dataset.id);
+    if (a === 'done') { ev.done = true; msg = 'Отмечено 💪'; } else { ev.skipped = true; msg = 'Пропуск записан'; }
+  } else if (a === 'makeup') {
+    w.events.push({ id: uid(), day: +b.dataset.day, start: b.dataset.s, end: b.dataset.e, title: 'Тренировка', cat: 'train' });
+    msg = 'Тренировка добавлена';
+  } else if (a === 'nomakeup') { w.noMakeup = true; }
+  else if (a === 't3') {
+    const t3 = w.events.find(x => x.tpl === 'train3'); t3.day = +b.dataset.day; w.t3set = true;
+    msg = `Тренировка — ${DAYS_ACC[t3.day]}`;
+  } else if (a === 'eve') {
+    const d = +b.dataset.day, cat = b.dataset.cat, [s, en] = eveningWindow(w, d);
+    w.events.push({ id: uid(), day: d, start: fromMin(s), end: fromMin(en), title: CATS[cat].name, cat, tpl: 'evening' });
+    msg = `Вечер: ${CATS[cat].name.toLowerCase()}`;
+  }
+  haptic(); save();
+  b.closest('.prompt').classList.add('bye');
+  setTimeout(() => { render(); if (msg) toast(msg); }, 200);
+});
+
+// ---------- today: agenda ----------
+function renderAgenda() {
+  const w = week(curKey()), d = todayIdx(), m = nowMin();
+  const evs = w.events.filter(e => e.day === d).sort(byTime);
+  $('#agendaMeta').textContent = evs.length ? `${evs.length} ${evs.length === 1 ? 'дело' : evs.length < 5 ? 'дела' : 'дел'}` : '';
+  $('#agenda').innerHTML = evs.map(e => {
+    const s = toMin(e.start), en = toMin(e.end), past = en <= m, cur = s <= m && m < en;
+    const sub = cur ? `сейчас · ещё ${dur(en - m)}` : e.done ? '<span class="ok">✓ сделано</span>' : e.skipped ? 'пропущено' : dur(en - s);
+    return `<button class="ag ${past ? 'past' : ''} ${cur ? 'cur' : ''}" data-id="${e.id}" style="--c:${CATS[e.cat].color}">
+      <span class="ag-time">${e.start}<small>${e.end}</small></span><i class="ag-bar"></i>
+      <span class="ag-main"><div class="t1">${esc(e.title)}</div><div class="t2">${sub}</div></span></button>`;
+  }).join('') + `<button class="ag add" id="agAdd"><span class="ag-time">+</span><span class="ag-main"><div class="t1">Добавить дело</div></span></button>`;
+}
+$('#agenda').addEventListener('click', e => {
+  if (e.target.closest('#agAdd')) { newEvent(todayIdx(), fromMin(Math.min(22 * 60, Math.ceil(nowMin() / 30) * 30))); return; }
+  const r = e.target.closest('[data-id]'); if (r) openEditor(week().events.find(x => x.id === r.dataset.id));
+});
+
+// ---------- tabs ----------
+function setTab(t) {
+  tab = t;
+  if (t === 'today') { monday = mondayOf(new Date()); activeDay = todayIdx(); }
+  render(); window.scrollTo(0, 0);
+  if (t === 'week') scrollToNow();
+}
+$('#tabbar').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b && b.dataset.tab !== tab) { haptic(); setTab(b.dataset.tab); } });
 
 // large title → compact bar
 new IntersectionObserver(([en]) => $('#bar').classList.toggle('scrolled', !en.isIntersecting), { rootMargin: '-48px 0px 0px 0px' }).observe($('#largeTitle'));
