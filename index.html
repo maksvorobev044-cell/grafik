@@ -246,6 +246,10 @@ body[data-part="night"]   { --a1: #9aaeff; --a2: #bfa6ff; --a3: #8fd3ff; }
 .eve .tag { order: -1; align-self: center; font-style: normal; font-size: 12px; font-weight: 600; color: #ff2d55; background: color-mix(in srgb, #ff2d55 12%, transparent); padding: 2px 8px; border-radius: 999px; }
 .eve-h span { font-size: 15px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .eve .seg button.on { color: var(--c); }
+.eve-grid { grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; }
+.eve-grid button { font-size: 12px; padding-left: 2px; padding-right: 2px; }
+@media (max-width: 359px) { .eve-grid { grid-template-columns: repeat(2, 1fr); } .eve .tag { display: none; } }
+.eve-h span { white-space: nowrap; }
 
 /* summary */
 .sum { padding: 20px; }
@@ -270,14 +274,19 @@ body[data-part="night"]   { --a1: #9aaeff; --a2: #bfa6ff; --a3: #8fd3ff; }
 .pbtn { height: 52px; border-radius: 14px; background: var(--fill-2); font-size: 17px; font-weight: 600; transition: transform .15s var(--ease), filter .15s; }
 .pbtn.pri { background: var(--c); color: #fff; }
 .pbtn:active, .tile:active { transform: scale(.96); }
-.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 359px) {
+  .tiles { grid-template-columns: 1fr 1fr; }
+  .tile { height: 54px !important; grid-auto-flow: column; justify-content: start; padding: 0 12px !important; gap: 8px !important; font-size: 14px !important; }
+  .tile span { font-size: 22px !important; }
+}
 .tile {
-  height: 84px; border-radius: 16px; display: grid; place-items: center; align-content: center; gap: 4px;
+  height: 78px; border-radius: 16px; display: grid; place-items: center; align-content: center; gap: 5px; padding: 0 2px; min-width: 0;
   background: color-mix(in srgb, var(--c) 11%, var(--surface)); color: color-mix(in srgb, var(--c) 70%, var(--text));
-  font-size: 16px; font-weight: 600; transition: transform .15s var(--ease);
+  font-size: 12px; font-weight: 600; letter-spacing: -.015em; white-space: nowrap; transition: transform .15s var(--ease);
 }
 @media (prefers-color-scheme: dark) { .tile { background: color-mix(in srgb, var(--c) 22%, var(--surface)); color: color-mix(in srgb, var(--c) 45%, #fff); } }
-.tile span { font-size: 28px; line-height: 1; }
+.tile span { font-size: 26px; line-height: 1; }
 .allset { padding: 18px 20px; margin-top: 12px; display: flex; gap: 14px; align-items: center; animation: rise .5s var(--ease) both; }
 .allset .p-ic { --c: #34c759; color: #34c759; }
 .allset .p-ic svg { width: 24px; height: 24px; }
@@ -553,12 +562,17 @@ dialog.sheet[open]::backdrop { animation: fade .3s ease; }
 const CATS = {
   work:    { name: 'Работа',     color: '#8e8e93' },
   train:   { name: 'Тренировка', color: '#ff2d55' },
-  sklad:   { name: 'Склад',      color: '#ff9500' },
-  montage: { name: 'Монтаж',     color: '#af52de' },
-  rest:    { name: 'Отдых',      color: '#34c759' },
-  other:   { name: 'Дела',       color: '#007aff' },
+  montage: { name: 'Монтаж',     color: '#af52de', icon: '🎬' },
+  rest:    { name: 'Отдых',      color: '#34c759', icon: '🛋️' },
+  other:   { name: 'Дела',       color: '#007aff', icon: '✏️' },
+  medit:   { name: 'Медитация',  color: '#30b0c7', icon: '🧘' },
+  read:    { name: 'Чтение',     color: '#5856d6', icon: '📖', title: 'Чтение книги' },
+  girl:    { name: 'Девушка',    color: '#ff9f0a', icon: '❤️', title: 'Встреча с девушкой' },
+  friends: { name: 'Друзья',     color: '#e0a800', icon: '👥', title: 'Встреча с друзьями' },
 };
-const EVENING_CATS = ['sklad', 'montage', 'rest', 'other'];
+CATS.work.icon = '💼';
+const EVENING_CATS = ['work', 'montage', 'rest', 'other', 'medit', 'read', 'girl', 'friends'];
+const catTitle = c => CATS[c].title || CATS[c].name;
 const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const DAYS_ACC = ['понедельник', 'вторник', 'среду', 'четверг', 'пятницу', 'субботу', 'воскресенье'];
@@ -597,7 +611,14 @@ function haptic() { try { navigator.vibrate && navigator.vibrate(8); } catch (e)
 
 // ---------- state ----------
 function load() {
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.template) return s; } catch (e) {}
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && s.template) {
+      // «Склад» больше не используется — это вечерняя работа
+      Object.values(s.weeks).forEach(w => w.events.forEach(e => { if (!CATS[e.cat]) { e.cat = 'work'; e.title = 'Работа'; } }));
+      return s;
+    }
+  } catch (e) {}
   return { template: structuredClone(DEFAULT_TEMPLATE), weeks: {} };
 }
 let state = load();
@@ -774,7 +795,7 @@ function renderEves(w) {
     const cur = w.events.find(x => x.day === d && x.tpl === 'evening');
     const train = e < toMin(DAY_END);
     return `<div class="eve"><div class="eve-h"><b>${DAYS_FULL[d]}</b><span>${fromMin(s)} – ${fromMin(e)}</span>${train ? '<em class="tag">тренировка</em>' : ''}</div>
-      <div class="seg">${EVENING_CATS.map(c => `<button data-day="${d}" data-cat="${c}" class="${cur && cur.cat === c ? 'on' : ''}" style="--c:${CATS[c].color}">${CATS[c].name}</button>`).join('')}</div></div>`;
+      <div class="seg eve-grid">${EVENING_CATS.map(c => `<button data-day="${d}" data-cat="${c}" class="${cur && cur.cat === c ? 'on' : ''}" style="--c:${CATS[c].color}">${CATS[c].name}</button>`).join('')}</div></div>`;
   }).join('');
 }
 
@@ -811,16 +832,16 @@ function centerCat() {
 }
 $('#evCats').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]'); if (!b) return;
-  const prevName = CATS[editCat].name;
+  const prevName = catTitle(editCat);
   editCat = b.dataset.cat;
-  if (!evForm.title.value || evForm.title.value === prevName) evForm.title.value = CATS[editCat].name;
+  if (!evForm.title.value || evForm.title.value === prevName) evForm.title.value = catTitle(editCat);
   renderCatChips(); haptic();
 });
 
 function openEditor(ev) {
   editing = ev; editCat = ev.cat;
   $('#evTitle').textContent = ev.id ? 'Изменить' : 'Новое дело';
-  evForm.title.value = ev.title || CATS[ev.cat].name;
+  evForm.title.value = ev.title || catTitle(ev.cat);
   evForm.day.value = ev.day; evForm.start.value = ev.start; evForm.end.value = ev.end;
   evForm.done.checked = !!ev.done;
   $('#evDelGroup').hidden = !ev.id;
@@ -833,7 +854,7 @@ evDlg.addEventListener('close', () => {
   if (evDlg.returnValue !== 'ok' || !editing) return;
   const f = evForm;
   if (toMin(f.end.value) <= toMin(f.start.value)) { toast('Конец должен быть позже начала'); return; }
-  const data = { title: f.title.value.trim() || CATS[editCat].name, cat: editCat, day: +f.day.value, start: f.start.value, end: f.end.value, done: f.done.checked };
+  const data = { title: f.title.value.trim() || catTitle(editCat), cat: editCat, day: +f.day.value, start: f.start.value, end: f.end.value, done: f.done.checked };
   const w = week();
   if (editing.id) Object.assign(w.events.find(e => e.id === editing.id), data);
   else w.events.push({ id: uid(), ...data });
@@ -889,8 +910,8 @@ $('#eves').addEventListener('click', e => {
   if (cur && cur.cat === cat) w.events = w.events.filter(x => x !== cur);
   else {
     const [s, en] = eveningWindow(w, d);
-    if (cur) Object.assign(cur, { cat, title: CATS[cat].name });
-    else w.events.push({ id: uid(), day: d, start: fromMin(s), end: fromMin(en), title: CATS[cat].name, cat, tpl: 'evening' });
+    if (cur) Object.assign(cur, { cat, title: catTitle(cat) });
+    else w.events.push({ id: uid(), day: d, start: fromMin(s), end: fromMin(en), title: catTitle(cat), cat, tpl: 'evening' });
   }
   haptic(); save(); render();
 });
@@ -1014,10 +1035,9 @@ function renderPrompts() {
       <div class="p-act"><button class="pbtn ${p.e.day === 5 ? 'pri' : ''}" data-act="t3" data-day="5">Суббота</button><button class="pbtn ${p.e.day === 6 ? 'pri' : ''}" data-act="t3" data-day="6">Воскресенье</button></div></section>`;
     if (p.kind === 'eve') {
       const [s, e] = eveningWindow(w, p.day), train = e < toMin(DAY_END);
-      const ICON = { sklad: '📦', montage: '🎬', rest: '🛋️', other: '✏️' };
       return `<section class="card prompt" style="--c:${CATS.other.color}">
       <div class="p-top"><div class="p-ic">🌙</div><div><div class="p-q">Что ${dayWord(p.day, d)} вечером?</div><div class="p-sub">${fromMin(s)} – ${fromMin(e)}${train ? ', потом тренировка' : ''}</div></div></div>
-      <div class="tiles">${EVENING_CATS.map(c => `<button class="tile" style="--c:${CATS[c].color}" data-act="eve" data-day="${p.day}" data-cat="${c}"><span>${ICON[c]}</span>${CATS[c].name}</button>`).join('')}</div></section>`;
+      <div class="tiles">${EVENING_CATS.map(c => `<button class="tile" style="--c:${CATS[c].color}" data-act="eve" data-day="${p.day}" data-cat="${c}"><span>${CATS[c].icon}</span>${CATS[c].name}</button>`).join('')}</div></section>`;
     }
   });
   $('#prompts').innerHTML = cards.length ? cards.join('') : `<section class="card allset"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><div><div class="p-q">Всё отмечено</div><div class="p-sub">Больше ничего делать не нужно</div></div></section>`;
@@ -1038,8 +1058,8 @@ $('#prompts').addEventListener('click', e => {
     msg = `Тренировка — ${DAYS_ACC[t3.day]}`;
   } else if (a === 'eve') {
     const d = +b.dataset.day, cat = b.dataset.cat, [s, en] = eveningWindow(w, d);
-    w.events.push({ id: uid(), day: d, start: fromMin(s), end: fromMin(en), title: CATS[cat].name, cat, tpl: 'evening' });
-    msg = `Вечер: ${CATS[cat].name.toLowerCase()}`;
+    w.events.push({ id: uid(), day: d, start: fromMin(s), end: fromMin(en), title: catTitle(cat), cat, tpl: 'evening' });
+    msg = `Вечер: ${catTitle(cat).toLowerCase()}`;
   }
   haptic(); save();
   b.closest('.prompt').classList.add('bye');
