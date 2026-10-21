@@ -90,6 +90,9 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
   background: var(--fill); color: var(--blue);
 }
 .icon-btn:active { transform: scale(.94); }
+.icon-btn, .check { position: relative; }
+.icon-btn::after { content: ""; position: absolute; inset: -6px; }
+.check::after { content: ""; position: absolute; inset: -10px; }
 .icon-btn svg { width: 18px; height: 18px; }
 
 /* ---------- hero ---------- */
@@ -127,7 +130,9 @@ body[data-part="night"]   { --a1: #9aaeff; --a2: #bfa6ff; --a3: #8fd3ff; }
   body[data-part="night"]   { --a1: #2f45ff; --a2: #7a3cff; --a3: #0a9cff; }
 }
 .section-h { display: flex; align-items: baseline; justify-content: space-between; margin: 30px 4px 10px; }
-.section-h h2 { font-size: 22px; font-weight: 700; letter-spacing: -.024em; margin: 0; }
+.section-h { gap: 12px; }
+.section-h h2 { font-size: 22px; font-weight: 700; letter-spacing: -.024em; margin: 0; white-space: nowrap; }
+.section-h > .meta { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .section-h .meta { font-size: 15px; color: var(--text-2); }
 
 /* now card */
@@ -220,12 +225,14 @@ body[data-part="night"]   { --a1: #9aaeff; --a2: #bfa6ff; --a3: #8fd3ff; }
 
 /* segmented */
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--fill); border-radius: 9px; padding: 2px; position: relative; }
-.seg button { font-size: 13px; font-weight: 500; padding: 6px 4px; border-radius: 7px; transition: background .25s var(--ease), box-shadow .25s; white-space: nowrap; }
+.seg button { font-size: 13px; font-weight: 500; padding: 8px 4px; min-width: 0; overflow: hidden; text-overflow: ellipsis; border-radius: 7px; transition: background .25s var(--ease), box-shadow .25s; white-space: nowrap; }
 .seg button.on { background: var(--surface); box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 3px 1px rgba(0,0,0,.04); font-weight: 600; }
 @media (prefers-color-scheme: dark) { .seg button.on { background: #636366; } }
 .seg button:active:not(.on) { opacity: .6; }
 .wk-seg { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.wk-seg .seg { width: 210px; }
+.wk-seg { flex-wrap: wrap; row-gap: 10px; }
+.wk-seg .seg { flex: 1 1 230px; min-width: 0; max-width: 300px; }
+@media (max-width: 360px) { .wk-seg .seg { max-width: none; } }
 .label-2 { font-size: 15px; color: var(--text-2); }
 
 /* evenings */
@@ -776,7 +783,7 @@ function renderSum(w) {
   w.events.forEach(e => { h[e.cat] = (h[e.cat] || 0) + (toMin(e.end) - toMin(e.start)) / 60; });
   const keys = Object.keys(CATS).filter(c => h[c]);
   const total = keys.reduce((a, c) => a + h[c], 0);
-  $('#sumMeta').textContent = `${hrs(total)} запланировано`;
+  $('#sumMeta').textContent = `${hrs(total)} в плане`;
   $('#sum').innerHTML = keys.length
     ? `<div class="stack">${keys.map(c => `<i style="--c:${CATS[c].color};flex-grow:${h[c]}"></i>`).join('')}</div>
        <div class="legend">${keys.map(c => `<div style="--c:${CATS[c].color}"><i></i>${CATS[c].name}<span>${hrs(h[c])}</span></div>`).join('')}</div>`
